@@ -154,8 +154,6 @@ def update_graph(selected_coin_id, selected_currency):
         return price_graph
     else:
         # If no data is available, create an empty figure and add a message to the title
-        # We can't use `go.Figure()` to add annotations, so we will create a blank plot
-        # with a title indicating no data.
         empty_df = pd.DataFrame(columns=['timestamp', 'price'])
         empty_fig = px.line(empty_df)
         empty_fig.update_layout(
