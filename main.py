@@ -24,10 +24,10 @@ CURRENCY_LIST = {
 }
 
 
-def fetch_crypto_data(coin_id, currency):
+def fetch_crypto_data(coin_id, currency, days=7):
     """
     Fetches historical price data for a given cryptocurrency and currency
-    over the last 7 days from the CoinGecko API.
+    over the last 'days' (1, 7, 30, 60, or 90) from the CoinGecko API.
 
     Args:
         coin_id (str): The ID of the cryptocurrency (e.g., 'bitcoin').
@@ -38,7 +38,7 @@ def fetch_crypto_data(coin_id, currency):
                       empty DataFrame if the API call fails.
     """
     try:
-        url = f"{API_URL_HISTORY}{coin_id}/market_chart?vs_currency={currency}&days=7"
+        url = f"{API_URL_HISTORY}{coin_id}/market_chart?vs_currency={currency}&days={days}"
         response_history = requests.get(url)
         response_history.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
         data_history = response_history.json()
@@ -109,7 +109,30 @@ app.layout = html.Div(style={
             'justifyContent': 'center',
             'alignItems': 'center',
             'marginBottom': '20px'
-        })
+        }),
+
+        html.Div([
+            html.H2("Time Frame", style={'fontSize': '24px', 'marginRight': '10px'}),
+            dcc.Dropdown(
+                id='days-dropdown',
+                options=[
+                    {'label': 'Last 1 day', 'value': 1},
+                    {'label': 'Last 7 days', 'value': 7},
+                    {'label': 'Last 30 days', 'value': 30},
+                    {'label': 'Last 60 days', 'value': 60},
+                    {'label': 'Last 90 days', 'value': 90},
+                ],
+                value=7,  # default
+                clearable=False,
+                style={'width': '300px', 'color': '#333', 'margin': 'auto'}
+            ),
+        ], style={
+            'display': 'flex',
+            'flexDirection': 'column',
+            'justifyContent': 'center',
+            'alignItems': 'center',
+            'marginBottom': '20px'
+        }),
     ], style={'display': 'flex', 'justifyContent': 'space-around', 'alignItems': 'center', 'flexWrap': 'wrap'}),
 
     dcc.Graph(
@@ -123,13 +146,14 @@ app.layout = html.Div(style={
 @app.callback(
     Output('price-graph', 'figure'),
     Input('crypto-dropdown', 'value'),
-    Input('currency-dropdown', 'value')
+    Input('currency-dropdown', 'value'),
+    Input('days-dropdown', 'value')
 )
-def update_graph(selected_coin_id, selected_currency):
+def update_graph(selected_coin_id, selected_currency, days):
     """
     Updates the price graph based on the selected cryptocurrency and currency.
     """
-    df_history = fetch_crypto_data(selected_coin_id, selected_currency)
+    df_history = fetch_crypto_data(selected_coin_id, selected_currency, days)
 
     # Check if the DataFrame is not empty
     if not df_history.empty:
