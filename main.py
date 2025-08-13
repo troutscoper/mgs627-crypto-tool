@@ -7,6 +7,8 @@ import plotly.express as px
 
 # --- Constants for API and UI ---
 API_URL_HISTORY = "https://api.coingecko.com/api/v3/coins/"
+API_URL_GLOBAL = "https://api.coingecko.com/api/v3/global"
+
 CRYPTO_LIST = {
     'bitcoin': 'Bitcoin (BTC)',
     'ethereum': 'Ethereum (ETH)',
@@ -55,6 +57,30 @@ def fetch_crypto_data(coin_id, currency, days=7):
         print(f"Error fetching data for {coin_id}: {e}")
         return pd.DataFrame()
 
+
+def fetch_global_market_data():
+    """
+    Fetches current market share as a percentage for each cryptocurrency.
+
+    Returns: pd.DataFrame: A DataFrame with 'coin' and 'percentage' columns
+    """
+    headers = {
+        "accept": "application/json",
+        "x-cg-demo-api-key": "CG-cCkes31SUqyJqWPRRQAExaMb"
+    }
+    try:
+        response = requests.get(API_URL_GLOBAL, headers=headers)
+        response.raise_for_status()
+        mdata = response.json()
+
+        # Convert dict to DataFrame
+        market_data = mdata["data"]["market_cap_percentage"]
+        df_market = pd.DataFrame(list(market_data.items()), columns=['coin', 'percentage'])
+        df_market = df_market.sort_values(by='percentage', ascending=False).head(10)
+        return df_market
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching global market data: {e}")
+        return pd.DataFrame(columns=['coin', 'percentage'])
 
 # --- Initialize the Dash App ---
 app = dash.Dash(__name__)
@@ -137,8 +163,10 @@ app.layout = html.Div(style={
 
     dcc.Graph(
         id='price-graph',
-        style={'height': '70vh', 'width': '90%', 'margin': 'auto', 'border': '1px solid #444', 'borderRadius': '10px'}
-    )
+        style={'height': '70vh', 'width': '90%', 'margin': 'auto', 'border': '1px solid #444', 'borderRadius': '10px'}),
+    dcc.Graph(
+        id='marketcap-graph',
+        style={'height': '60vh', 'width': '90%', 'margin': 'auto'})
 ])
 
 
@@ -190,6 +218,31 @@ def update_graph(selected_coin_id, selected_currency, days):
         )
         return empty_fig
 
+# Callback for market dominance graph
+@app.callback(
+    Output('marketcap-graph', 'figure'),
+    Input('crypto-dropdown', 'value')  # Or any input that should trigger update
+)
+
+def update_market_dominance(_):
+    """
+    Updates the price graph based on the selected cryptocurrency and currency.
+    """
+    df_dominance = fetch_global_market_data()
+    if not df_dominance.empty:
+        fig = px.bar(df_dominance, x="coin", y="percentage",
+                     title="Cryptocurrency Market Cap Dominance",
+                     text="percentage")
+        fig.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
+        fig.update_layout(
+            template="plotly_dark",
+            plot_bgcolor='#2a2a2a',
+            paper_bgcolor='#1a1a1a',
+            font_color='#ffffff'
+        )
+        return fig
+    else:
+        return px.bar(pd.DataFrame(columns=["Coin", "Market Cap %"]))
 
 # --- Run the App ---
 if __name__ == '__main__':
