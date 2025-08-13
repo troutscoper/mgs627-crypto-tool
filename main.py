@@ -9,7 +9,7 @@ import plotly.express as px
 API_URL_HISTORY = "https://api.coingecko.com/api/v3/coins/"
 API_URL_GLOBAL = "https://api.coingecko.com/api/v3/global"
 
-CRYPTO_LIST = CRYPTO_LIST = {
+CRYPTO_LIST = {
     'bitcoin': 'Bitcoin (BTC)',
     'ethereum': 'Ethereum (ETH)',
     'tether': 'Tether (USDT)',
